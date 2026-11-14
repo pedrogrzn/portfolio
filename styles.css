@@ -359,7 +359,7 @@ section { padding-top: 112px; }
 .dock a, .dock button { flex: none; display: grid; place-items: center; height: 36px; padding: 0 14px; border-radius: 999px; white-space: nowrap; transition: background-color 160ms ease, color 160ms ease; }
 .dock a:hover, .dock button:hover { background: color-mix(in srgb, var(--dock-ink) 14%, transparent); }
 .dock a.on { background: var(--accent); color: #fff; }
-.dock-home { display: flex !important; align-items: baseline; justify-content: center; width: 36px; padding: 0 !important; line-height: 36px; font-weight: 800; letter-spacing: -0.04em; }
+.dock-home { display: flex !important; align-items: baseline; justify-content: center; width: 40px; font-size: 13px; padding: 0 !important; line-height: 36px; font-weight: 800; letter-spacing: -0.04em; }
 .dock-home .stop { color: var(--accent-2); }
 .dock-home.on .stop { color: #fff; }
 .dock-sep { flex: none; width: 1px; height: 18px; margin: 0 6px; background: var(--dock-rule); }

@@ -1,0 +1,17 @@
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Netlify / Node
+.netlify/
+node_modules/
+
+# Entorno y secretos
+.env
+.env.*

@@ -517,3 +517,8 @@ html, body { overflow-x: clip; }
 .photo { width: 260px; box-shadow: 0 0 0 1px var(--rule), 0 24px 48px -28px rgba(12, 20, 48, 0.35); }
 @media (max-width: 820px) { .photo { width: 180px; } }
 @media (min-width: 821px) { .photo { margin-inline: auto; } }
+
+/* Short desktop screens: keep air under the eyebrow and let the name follow the height too */
+.hero-in { padding-top: clamp(110px, 17vh, 180px); }
+.hero-name { font-size: clamp(38px, min(5.4vw, 10vh), 84px); }
+@media (max-width: 820px) { .hero-in { padding-top: 96px; } .hero-name { font-size: clamp(36px, 10.5vw, 60px); } }

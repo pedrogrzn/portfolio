@@ -1,6 +1,6 @@
 # Portfolio web — Pedro Garzón
 
-Web personal estática (HTML, CSS y JavaScript) desplegada en Netlify.
+Web personal estática (HTML, CSS y JavaScript) desplegada en GitHub Pages en https://pedrogarzon.com.
 
 ## Estructura
 
@@ -20,5 +20,4 @@ npx serve .
 
 ## Despliegue
 
-El sitio se despliega automáticamente en Netlify con cada push a `main`
-(sin build command; publish directory: `.`).
+El sitio se publica automáticamente con GitHub Pages en cada push a `main` (sin build; se sirve la raíz del repo).

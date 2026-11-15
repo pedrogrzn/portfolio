@@ -516,3 +516,4 @@ html, body { overflow-x: clip; }
 /* Photo: white studio background, so give it an edge */
 .photo { width: 260px; box-shadow: 0 0 0 1px var(--rule), 0 24px 48px -28px rgba(12, 20, 48, 0.35); }
 @media (max-width: 820px) { .photo { width: 180px; } }
+@media (min-width: 821px) { .photo { margin-inline: auto; } }

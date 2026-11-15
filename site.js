@@ -120,6 +120,7 @@
     const pointer = { x: -9999, y: -9999, tx: -9999, ty: -9999, on: false };
     const ripples = [];
     let visible = true;
+    let gone = false;
     let raf = null;
     let lastAuto = 0;
 
@@ -177,7 +178,7 @@
         ctx.fill();
       }
       ctx.globalAlpha = 1;
-      if (visible && !document.hidden && !reduceMotion) raf = requestAnimationFrame(frame);
+      if (visible && !gone && !document.hidden && !reduceMotion) raf = requestAnimationFrame(frame);
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
 
@@ -217,7 +218,32 @@
     readColors();
     size();
     if (reduceMotion) frame(performance.now()); else kick();
+
+    // Depth: the hero stays pinned while the page slides over it, and its
+    // layers fly towards the viewer at different speeds, blurring out.
+    if (!reduceMotion) {
+      root.classList.add("depth");
+      let queued = false;
+      const depth = () => {
+        queued = false;
+        const p = Math.min(1.2, Math.max(0, window.scrollY / window.innerHeight));
+        hero.style.setProperty("--p", p.toFixed(4));
+        const wasGone = gone;
+        gone = p >= 1.05;
+        hero.classList.toggle("gone", gone);
+        if (wasGone && !gone) kick();
+      };
+      window.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(depth); } }, { passive: true });
+      window.addEventListener("resize", depth);
+      depth();
+    }
   }
+
+  // The hero is sticky, so "#top" links scroll the window instead of the element.
+  document.querySelectorAll('a[href="#top"]').forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+  }));
 
   /* ── Dock: highlight the section in view ────────── */
   const dockLinks = [...document.querySelectorAll(".dock a")];
@@ -227,7 +253,7 @@
     let best = null;
     let bestTop = -Infinity;
     dockTargets.forEach((section) => {
-      const top = section.getBoundingClientRect().top;
+      const top = section.classList.contains("hero") ? -window.scrollY : section.getBoundingClientRect().top;
       if (top <= line && top > bestTop) { best = section; bestTop = top; }
     });
     dockLinks.forEach((link) => link.classList.toggle("on", !!best && link.getAttribute("href") === `#${best.id}`));
@@ -269,8 +295,7 @@
   if (apps) tabGroup([...apps.querySelectorAll('[role="tab"]')], [...apps.querySelectorAll('[role="tabpanel"]')]);
 
   /* ── Network diagram ────────────────────────────── */
-  const topo = document.querySelector("[data-topo]");
-  if (topo) {
+  document.querySelectorAll("[data-topo]").forEach((topo) => {
     const caption = topo.querySelector("[data-topo-caption]");
     const nodes = [...topo.querySelectorAll(".node")];
     const links = [...topo.querySelectorAll(".links path")];
@@ -291,174 +316,7 @@
     });
     onLang.push(paint);
     paint();
-  }
-
-  /* ── ECG demo: simulated trace and beat detection ─ */
-  const ecg = document.querySelector("[data-ecg]");
-  if (ecg) {
-    const cv = ecg.querySelector("[data-ecg-canvas]");
-    const ctx = cv.getContext("2d");
-    const rateInput = ecg.querySelector("[data-ecg-rate]");
-    const rateOut = ecg.querySelector("[data-ecg-rate-out]");
-    const runButton = ecg.querySelector("[data-ecg-run]");
-    const beatsOut = ecg.querySelector("[data-ecg-beats]");
-    const bpmOut = ecg.querySelector("[data-ecg-bpm]");
-    const flag = ecg.querySelector("[data-ecg-flag]");
-    const seconds = 8;   // window shown
-    const fs = 250;      // samples per second
-    let width = 0;
-    let height = 0;
-    let samples = [];
-    let peaks = [];
-    let found = [];
-    let scan = -1;       // scan position in samples, -1 = idle
-    let state = "idle";
-    let raf = null;
-
-    const bump = (u, centre, spread) => Math.exp(-((u - centre) ** 2) / (2 * spread * spread));
-    // One heartbeat over u in [0, 1): P wave, QRS complex, T wave.
-    const beat = (u) =>
-      0.12 * bump(u, 0.2, 0.035) - 0.16 * bump(u, 0.37, 0.012) + 1.0 * bump(u, 0.4, 0.014) -
-      0.24 * bump(u, 0.435, 0.014) + 0.26 * bump(u, 0.64, 0.05);
-
-    // Build the signal with a little rate jitter and noise, then find R peaks:
-    // local maxima above a threshold, with a refractory period.
-    const build = () => {
-      const bpm = Number(rateInput.value);
-      const period = 60 / bpm;
-      const n = seconds * fs;
-      const starts = [];
-      for (let t = 0.15; t < seconds; t += period * (1 + (Math.random() - 0.5) * 0.06)) starts.push(t);
-      samples = new Array(n);
-      for (let i = 0; i < n; i += 1) {
-        const s = i / fs;
-        let v = 0;
-        for (const start of starts) {
-          const u = (s - start) / period;
-          if (u >= 0 && u < 1) v += beat(u);
-        }
-        samples[i] = v + Math.sin(s * 2 * Math.PI * 0.3) * 0.03 + (Math.random() - 0.5) * 0.025;
-      }
-      peaks = [];
-      const refractory = Math.round(0.25 * fs);
-      for (let i = 1; i < n - 1; i += 1) {
-        if (samples[i] > 0.6 && samples[i] >= samples[i - 1] && samples[i] > samples[i + 1]) {
-          if (!peaks.length || i - peaks[peaks.length - 1] > refractory) peaks.push(i);
-        }
-      }
-    };
-
-    const setFlag = (kind) => {
-      state = kind;
-      flag.className = "ecg-flag" + (kind === "ok" ? " ok" : kind === "hi" || kind === "lo" ? " warn" : "");
-      flag.textContent = pick(flag, kind);
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-      const grid = cssVar("--rule");
-      const accent = cssVar("--accent");
-      const ink = cssVar("--ink");
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = grid;
-      for (let x = 0; x <= width; x += width / (seconds * 5)) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke(); }
-      for (let y = 0; y <= height; y += height / 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke(); }
-      const px = (i) => (i / samples.length) * width;
-      const py = (v) => height * 0.68 - v * height * 0.5;
-      const stroke = (upTo, color, lineWidth) => {
-        ctx.beginPath();
-        for (let i = 0; i <= upTo; i += 1) {
-          if (i === 0) ctx.moveTo(px(i), py(samples[i])); else ctx.lineTo(px(i), py(samples[i]));
-        }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = lineWidth;
-        ctx.stroke();
-      };
-      stroke(samples.length - 1, ink, 1.4);
-      if (scan >= 0) {
-        stroke(Math.min(Math.floor(scan), samples.length - 1), accent, 1.8);
-        ctx.fillStyle = accent;
-        ctx.fillRect(px(scan), 0, 1.5, height);
-      }
-      found.forEach((i) => {
-        ctx.beginPath();
-        ctx.arc(px(i), py(samples[i]), 4.5, 0, Math.PI * 2);
-        ctx.fillStyle = accent;
-        ctx.fill();
-      });
-    };
-
-    const finish = () => {
-      scan = samples.length - 1;
-      found = peaks.slice();
-      const gaps = [];
-      for (let i = 1; i < found.length; i += 1) gaps.push((found[i] - found[i - 1]) / fs);
-      const bpm = gaps.length ? 60 / (gaps.reduce((a, b) => a + b, 0) / gaps.length) : 0;
-      beatsOut.textContent = String(found.length);
-      bpmOut.textContent = bpm ? `${Math.round(bpm)} bpm` : "—";
-      setFlag(bpm > 100 ? "hi" : bpm && bpm < 60 ? "lo" : "ok");
-      runButton.disabled = false;
-      draw();
-    };
-
-    const run = () => {
-      cancelAnimationFrame(raf);
-      build();
-      found = [];
-      beatsOut.textContent = "0";
-      bpmOut.textContent = "—";
-      setFlag("idle");
-      if (reduceMotion) { finish(); return; }
-      runButton.disabled = true;
-      scan = 0;
-      const speed = samples.length / 2200; // about 2.2 s for the whole window
-      let last = performance.now();
-      const step = (now) => {
-        scan = Math.min(samples.length - 1, scan + (now - last) * speed);
-        last = now;
-        const idx = Math.floor(scan);
-        while (found.length < peaks.length && peaks[found.length] <= idx) {
-          found.push(peaks[found.length]);
-          beatsOut.textContent = String(found.length);
-        }
-        draw();
-        if (idx >= samples.length - 1) finish();
-        else raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    };
-
-    const reset = () => {
-      cancelAnimationFrame(raf);
-      runButton.disabled = false;
-      scan = -1;
-      found = [];
-      beatsOut.textContent = "—";
-      bpmOut.textContent = "—";
-      build();
-      setFlag("idle");
-      draw();
-    };
-
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      width = cv.clientWidth;
-      height = cv.clientHeight;
-      cv.width = Math.round(width * ratio);
-      cv.height = Math.round(height * ratio);
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      draw();
-    };
-
-    rateInput.addEventListener("input", () => { rateOut.textContent = rateInput.value; reset(); });
-    runButton.addEventListener("click", run);
-    window.addEventListener("resize", resize);
-    onLang.push(() => setFlag(state));
-    onTheme.push(draw);
-    build();
-    setFlag("idle");
-    resize();
-  }
+  });
 
   /* ── More projects: filters ─────────────────────── */
   const filterButtons = document.querySelectorAll("[data-filter]");
@@ -528,7 +386,8 @@
       const [kind, ...rest] = item.dataset.run.split(":");
       const arg = rest.join(":");
       palette.close();
-      if (kind === "go") document.querySelector(arg)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+      if (kind === "go" && arg === "#top") window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+      else if (kind === "go") document.querySelector(arg)?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
       else if (kind === "open") window.open(arg, "_blank", "noopener");
       else if (kind === "copy") copyEmail();
       else if (kind === "theme") toggleTheme();

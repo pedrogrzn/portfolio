@@ -36,6 +36,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
   <a class="skip" href="#main"><span lang="en">Skip to content</span><span lang="es">Saltar al contenido</span></a>
@@ -91,9 +92,9 @@
         <div id="edu">
           <h3><span lang="en">Education</span><span lang="es">Formación</span></h3>
           <ul>
-            <li><b><span lang="en">MSc Telecommunication Engineering</span><span lang="es">Máster en Ingeniería de Telecomunicación</span></b><span>Universidad Carlos III de Madrid, <span lang="en">2024 to now</span><span lang="es">2024 a hoy</span></span></li>
-            <li><b><span lang="en">Erasmus+ exchange</span><span lang="es">Intercambio Erasmus+</span></b><span>Technical University of Munich, 2022 to 2023</span></li>
-            <li><b><span lang="en">BSc Telecommunications Engineering</span><span lang="es">Grado en Ing. de Tecnologías de Telecomunicación</span></b><span>Universidad de Granada, 2020 to 2024</span></li>
+            <li class="edu-li"><span class="logo logo-uc3m-mark edu-logo" aria-hidden="true"></span><div><b><span lang="en">MSc Telecommunication Engineering</span><span lang="es">Máster en Ingeniería de Telecomunicación</span></b><span>Universidad Carlos III de Madrid, <span lang="en">2024 to now</span><span lang="es">2024 a hoy</span></span></div></li>
+            <li class="edu-li"><span class="logo logo-tum-mark edu-logo" aria-hidden="true"></span><div><b><span lang="en">Erasmus+ exchange</span><span lang="es">Intercambio Erasmus+</span></b><span>Technical University of Munich, 2022 to 2023</span></div></li>
+            <li class="edu-li"><span class="logo logo-ugr-mark edu-logo" aria-hidden="true"></span><div><b><span lang="en">BSc Telecommunications Engineering</span><span lang="es">Grado en Ing. de Tecnologías de Telecomunicación</span></b><span>Universidad de Granada, 2020 to 2024</span></div></li>
           </ul>
         </div>
         <div>
@@ -195,8 +196,8 @@
               </div>
               <div>
                 <h4><span lang="en">What I built</span><span lang="es">Qué construí</span></h4>
-                <p lang="en">A leak-free pipeline with triple-barrier labels, walk-forward validation and meta-labeling with a regime gate. XGBoost is compared with a multimodal model (cross-attention with FinBERT sentiment) and zero-shot foundation models, served through a FastAPI signal service.</p>
-                <p lang="es">Un pipeline sin fugas de información con etiquetas de triple barrera, validación walk-forward y meta-labeling con filtro de régimen. XGBoost se compara con un modelo multimodal (cross-attention con sentimiento FinBERT) y con modelos fundacionales en zero-shot, servido con un servicio de señales en FastAPI.</p>
+                <p lang="en">A leak-free pipeline on three currency pairs: triple-barrier labels, expanding walk-forward validation on 2013–2024, and XGBoost with meta-labeling and a regime gate, tested against four baselines. A multimodal model with FinBERT news sentiment is replicated as a separate chapter.</p>
+                <p lang="es">Un pipeline sin fugas de información sobre tres pares de divisas: etiquetas de triple barrera, validación walk-forward expansiva en 2013–2024 y XGBoost con meta-labeling y filtro de régimen, comparado con cuatro baselines. Un modelo multimodal con sentimiento de noticias (FinBERT) se replica en un capítulo aparte.</p>
               </div>
               <div>
                 <h4><span lang="en">Where it stands</span><span lang="es">En qué punto está</span></h4>
@@ -204,6 +205,45 @@
                 <p lang="es">Tres de seis fases están cerradas y el forward test está en marcha. Haz clic en una fase para ver qué implicó.</p>
               </div>
             </div>
+            <figure class="topo pipe" data-topo>
+              <svg viewBox="0 22 640 94" role="group" aria-label="Thesis pipeline">
+                <g class="links">
+                  <path data-a="data" data-b="label" d="M100 69H114"/>
+                  <path data-a="label" data-b="m1" d="M206 69H220"/>
+                  <path data-a="m1" data-b="m2" d="M312 69H326"/>
+                  <path data-a="m2" data-b="m3" d="M418 69H432"/>
+                  <path data-a="m3" data-b="bt" d="M524 69H538"/>
+                </g>
+                <g class="node" data-id="data" tabindex="0" role="button"
+                   data-en="Daily prices for EUR/USD, GBP/USD and USD/JPY from yfinance, plus macro series from FRED. 50 features, all lagged one day, and tests that stop the run if any feature looks into the future."
+                   data-es="Precios diarios de EUR/USD, GBP/USD y USD/JPY de yfinance, más series macro de FRED. 50 variables, todas con un día de retraso, y tests que paran la ejecución si alguna mira al futuro.">
+                  <rect x="8" y="40" width="92" height="58" rx="10"/><text x="54" y="64">Data</text><text class="s" x="54" y="81">3 pairs · daily</text></g>
+                <g class="node" data-id="label" tabindex="0" role="button"
+                   data-en="Triple-barrier labels: from each day, does the price touch +1.5 ATR first, −1.5 ATR first, or neither within 5 days? That gives up, down or neutral."
+                   data-es="Etiquetas de triple barrera: desde cada día, ¿el precio toca antes +1,5 ATR, −1,5 ATR o ninguna en 5 días? Eso da sube, baja o neutral.">
+                  <rect x="114" y="40" width="92" height="58" rx="10"/><text x="160" y="64">Label</text><text class="s" x="160" y="81">triple barrier</text></g>
+                <g class="node" data-id="m1" tabindex="0" role="button"
+                   data-en="Primary model: XGBoost predicts the direction every day. Hyperparameters are tuned with Optuna inside each walk-forward window, never on the test data."
+                   data-es="Modelo primario: XGBoost predice la dirección cada día. Los hiperparámetros se ajustan con Optuna dentro de cada ventana walk-forward, nunca con los datos de test.">
+                  <rect x="220" y="40" width="92" height="58" rx="10"/><text x="266" y="64">M1</text><text class="s" x="266" y="81">XGBoost</text></g>
+                <g class="node" data-id="m2" tabindex="0" role="button"
+                   data-en="Meta-labeling: a second model estimates how likely M1's call is to win. A trade is taken only if that probability is above 0.50."
+                   data-es="Meta-labeling: un segundo modelo estima la probabilidad de que la predicción de M1 acierte. Solo se opera si supera 0,50.">
+                  <rect x="326" y="40" width="92" height="58" rx="10"/><text x="372" y="64">M2</text><text class="s" x="372" y="81">meta-labeling</text></g>
+                <g class="node" data-id="m3" tabindex="0" role="button"
+                   data-en="Regime gate: trade only in the market states where signal appeared in development (VIX z-score above 1.5, short-term volatility 1.5× the monthly, or ADX above 30). Ensemble of 3 seeds."
+                   data-es="Filtro de régimen: operar solo en los estados de mercado donde apareció señal en desarrollo (z-score del VIX por encima de 1,5, volatilidad a corto 1,5× la mensual o ADX por encima de 30). Ensemble de 3 semillas.">
+                  <rect x="432" y="40" width="92" height="58" rx="10"/><text x="478" y="64">M3</text><text class="s" x="478" y="81">regime gate</text></g>
+                <g class="node" data-id="bt" tabindex="0" role="button"
+                   data-en="One backtest for every model: stop and target at the label barriers, exit after 5 days, 1 bp cost, one position at a time. Compared against four baselines, including a random walk."
+                   data-es="Un mismo backtest para todos los modelos: stop y objetivo en las barreras de la etiqueta, salida a los 5 días, coste de 1 pb y una posición a la vez. Se compara con cuatro baselines, incluido un paseo aleatorio.">
+                  <rect x="538" y="40" width="92" height="58" rx="10"/><text x="584" y="64">Backtest</text><text class="s" x="584" y="81">1 bp · vs baselines</text></g>
+              </svg>
+              <figcaption data-topo-caption
+                data-en="How the final model turns data into a trade, as fixed in the pre-registered protocol. Click any block."
+                data-es="Cómo el modelo final convierte datos en una operación, tal como quedó fijado en el protocolo pre-registrado. Haz clic en cualquier bloque."></figcaption>
+            </figure>
+
             <div class="track-wrap" data-track>
               <ol class="track" role="tablist">
                 <li class="done" role="tab" tabindex="0" aria-selected="false"><span lang="en">Protocol</span><span lang="es">Protocolo</span></li>
@@ -222,7 +262,7 @@
                 <p hidden><span lang="en"><b>Next.</b> Writing up the thesis, including a chapter on what did not work in the exploratory phase.</span><span lang="es"><b>Siguiente.</b> Redactar la memoria, incluido un capítulo sobre lo que no funcionó en la fase exploratoria.</span></p>
               </div>
             </div>
-            <p class="case-tools">Python · XGBoost · PyTorch · SHAP · FastAPI · Selenium</p>
+            <p class="case-tools">Python · XGBoost · Optuna · SHAP · pandas · yfinance · FRED API · FastAPI</p>
           </div>
         </article>
 
@@ -323,28 +363,61 @@
               </div>
             </div>
 
-            <div class="ecg" data-ecg>
-              <div class="ecg-bar">
-                <label class="ecg-rate">
-                  <span lang="en">Heart rate</span><span lang="es">Frecuencia</span>
-                  <input type="range" min="45" max="150" value="72" step="1" data-ecg-rate>
-                  <output data-ecg-rate-out>72</output> bpm
-                </label>
-                <button type="button" class="btn btn-small" data-ecg-run><span lang="en">Run beat detection</span><span lang="es">Detectar latidos</span></button>
-              </div>
-              <canvas data-ecg-canvas aria-label="Simulated ECG"></canvas>
-              <div class="ecg-out">
-                <span><span lang="en">Beats found</span><span lang="es">Latidos</span> <b data-ecg-beats>—</b></span>
-                <span><span lang="en">Measured</span><span lang="es">Medido</span> <b data-ecg-bpm>—</b></span>
-                <span class="ecg-flag" data-ecg-flag
-                  data-idle-en="Press run to scan the trace" data-idle-es="Pulsa detectar para analizar la señal"
-                  data-ok-en="Normal rhythm" data-ok-es="Ritmo normal"
-                  data-hi-en="Tachycardia alert (over 100 bpm)" data-hi-es="Alerta de taquicardia (más de 100 lpm)"
-                  data-lo-en="Bradycardia alert (under 60 bpm)" data-lo-es="Alerta de bradicardia (menos de 60 lpm)"></span>
-              </div>
-              <p class="ecg-note" lang="en">Simulated signal for illustration. The real app read live data from the BITalino board.</p>
-              <p class="ecg-note" lang="es">Señal simulada como ilustración. La app real leía datos en vivo de la placa BITalino.</p>
-            </div>
+            <figure class="topo kit" data-topo>
+              <svg viewBox="0 0 640 250" role="group" aria-label="BITalino board and signal path">
+                <rect class="board" x="150" y="28" width="300" height="196" rx="14"/>
+                <path class="perf" d="M150 100H450M150 166H450M340 28V166M250 28V100"/>
+                <circle class="hole" cx="163" cy="41" r="3.5"/><circle class="hole" cx="437" cy="41" r="3.5"/><circle class="hole" cx="163" cy="211" r="3.5"/><circle class="hole" cx="437" cy="211" r="3.5"/>
+                <g class="mod-off"><rect x="260" y="44" width="70" height="44" rx="8"/><text x="295" y="70">EMG</text></g>
+                <g class="mod-off"><rect x="350" y="44" width="88" height="44" rx="8"/><text x="394" y="70">EDA</text></g>
+                <g class="mod-off"><rect x="162" y="176" width="58" height="38" rx="8"/><text x="191" y="199">ACC</text></g>
+                <g class="mod-off"><rect x="228" y="176" width="58" height="38" rx="8"/><text x="257" y="199">LUX</text></g>
+                <g class="mod-off"><rect x="294" y="176" width="58" height="38" rx="8"/><text x="323" y="199">BUZ</text></g>
+                <path class="wave" d="M462 118a14 14 0 0 1 0 20M470 110a26 26 0 0 1 0 36M478 102a38 38 0 0 1 0 52"/>
+                <g class="links">
+                  <path data-a="leads" data-b="ecg" d="M58 70C110 70 120 66 162 66"/>
+                  <path data-a="leads" data-b="ecg" d="M58 125C112 125 118 76 162 72"/>
+                  <path data-a="leads" data-b="ecg" d="M58 180C116 180 122 82 162 78"/>
+                  <path data-a="ecg" data-b="mcu" d="M205 88V112"/>
+                  <path data-a="mcu" data-b="bt" d="M330 133H350"/>
+                  <path data-a="bt" data-b="app" d="M438 133H506"/>
+                  <path data-a="pwr" data-b="mcu" d="M380 176V166H300V156"/>
+                </g>
+                <g class="node" data-id="leads" tabindex="0" role="button"
+                   data-en="Three adhesive electrodes on the chest pick up the heart's electrical activity, a few millivolts at most."
+                   data-es="Tres electrodos adhesivos en el pecho captan la actividad eléctrica del corazón, unos pocos milivoltios como mucho.">
+                  <text class="lbl" x="42" y="40" lang="en">Electrodes</text><text class="lbl" x="42" y="40" lang="es">Electrodos</text>
+                  <circle cx="42" cy="70" r="15"/><text x="42" y="74">RA</text>
+                  <circle cx="42" cy="125" r="15"/><text x="42" y="129">LA</text>
+                  <circle cx="42" cy="180" r="15"/><text x="42" y="184">RL</text></g>
+                <g class="node" data-id="ecg" tabindex="0" role="button"
+                   data-en="ECG sensor module: amplifies and filters the raw signal so the board can read it."
+                   data-es="Módulo sensor de ECG: amplifica y filtra la señal en bruto para que la placa pueda leerla.">
+                  <rect x="162" y="44" width="86" height="44" rx="8"/><text x="205" y="64">ECG</text><text class="s" x="205" y="79">sensor</text></g>
+                <g class="node" data-id="mcu" tabindex="0" role="button"
+                   data-en="Microcontroller: samples the ECG with its analog-to-digital converter and packs the samples into frames."
+                   data-es="Microcontrolador: muestrea el ECG con su conversor analógico-digital y empaqueta las muestras en tramas.">
+                  <rect x="162" y="112" width="168" height="44" rx="8"/><text x="246" y="131">MCU</text><text class="s" x="246" y="146">ADC · sampling</text></g>
+                <g class="node" data-id="bt" tabindex="0" role="button"
+                   data-en="Bluetooth module: streams the frames to the computer in real time, no cable to the patient."
+                   data-es="Módulo Bluetooth: envía las tramas al ordenador en tiempo real, sin cable hasta el paciente.">
+                  <rect x="350" y="112" width="88" height="44" rx="8"/><text x="394" y="131">Bluetooth</text><text class="s" x="394" y="146">wireless</text></g>
+                <g class="node" data-id="pwr" tabindex="0" role="button"
+                   data-en="Power block: a small battery, so the whole kit is portable and isolated from the mains."
+                   data-es="Bloque de alimentación: una batería pequeña, así el kit es portátil y está aislado de la red eléctrica.">
+                  <rect x="360" y="176" width="78" height="38" rx="8"/><text x="399" y="199">PWR</text></g>
+                <g class="node" data-id="app" tabindex="0" role="button"
+                   data-en="MATLAB app: filters the stream, finds each beat with Pan–Tompkins and raises rhythm alerts."
+                   data-es="App en MATLAB: filtra la señal, encuentra cada latido con Pan–Tompkins y lanza alertas de ritmo.">
+                  <rect x="506" y="88" width="112" height="72" rx="8"/>
+                  <polyline class="trace" points="516,128 534,128 539,122 543,128 549,128 553,104 557,140 561,128 572,128 578,121 586,128 596,128 600,108 604,138 608,128"/>
+                  <path class="base" d="M494 168H630L620 176H504Z"/><text class="s" x="562" y="153">MATLAB</text></g>
+              </svg>
+              <figcaption data-topo-caption
+                data-en="This is the BITalino kit the app read from. Click any part to follow the signal from the chest to the screen."
+                data-es="Este es el kit BITalino del que leía la app. Haz clic en cualquier parte para seguir la señal del pecho a la pantalla."></figcaption>
+            </figure>
+
             <p class="case-tools">MATLAB · App Designer · BITalino · Bluetooth · PhysioNet</p>
           </div>
         </article>
@@ -539,5 +612,6 @@
   </dialog>
 
   <script src="site.js"></script>
+  <script src="hero3d.js"></script>
 </body>
 </html>

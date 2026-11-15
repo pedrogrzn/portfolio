@@ -301,10 +301,31 @@
     const links = [...topo.querySelectorAll(".links path")];
     let active = null;
     const paint = () => { caption.textContent = pick(active || caption); };
+    // On phones an SVG diagram is too small to tap, so mirror its parts as
+    // readable chips under the drawing (shown by CSS only on narrow screens).
+    const chips = [];
+    const svg = topo.querySelector("svg");
+    if (svg) {
+      const row = document.createElement("div");
+      row.className = "topo-chips";
+      nodes.forEach((node) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.dataset.id = node.dataset.id;
+        const labels = [...node.querySelectorAll("text.lbl[lang]")];
+        if (labels.length) labels.forEach((t) => { const sp = document.createElement("span"); sp.lang = t.getAttribute("lang"); sp.textContent = t.textContent; chip.append(sp); });
+        else chip.textContent = (node.querySelector("text:not(.s)") || node.querySelector("text"))?.textContent || node.dataset.id;
+        chip.addEventListener("click", () => choose(node));
+        chips.push(chip);
+        row.append(chip);
+      });
+      svg.after(row);
+    }
     const choose = (node) => {
       active = active === node ? null : node;
       const id = active?.dataset.id;
       nodes.forEach((other) => other.classList.toggle("on", other === active));
+      chips.forEach((chip) => chip.classList.toggle("on", chip.dataset.id === id));
       links.forEach((path) => path.classList.toggle("hot", !!id && (path.dataset.a === id || path.dataset.b === id)));
       paint();
     };

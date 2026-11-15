@@ -123,31 +123,70 @@
     packets.frustumCulled = false;
     scene.add(packets);
 
-    /* ── Bits sent on click: 0s and 1s riding the lines ─ */
-    const glyph = (ch) => {
-      const c = document.createElement("canvas");
-      c.width = c.height = 64;
-      const g = c.getContext("2d");
+    /* ── Data pulses on click ──────────────────────────
+       Each pulse starts on a thread near the cursor and travels along it to
+       the edge: a bright core with a soft halo, followed by a short trail of
+       0s and 1s, while the thread lights up behind it. */
+    const atlasCanvas = document.createElement("canvas");
+    atlasCanvas.width = 256;
+    atlasCanvas.height = 64;
+    {
+      const g = atlasCanvas.getContext("2d");
       g.fillStyle = "#fff";
       g.font = `600 46px "JetBrains Mono", ui-monospace, monospace`;
       g.textAlign = "center";
       g.textBaseline = "middle";
-      g.fillText(ch, 32, 34);
-      return new THREE.CanvasTexture(c);
-    };
-    const POOL = 360;
-    const bitSets = ["0", "1"].map((ch) => {
-      const geo = new THREE.BufferGeometry();
-      const arr = new Float32Array(POOL * 3).fill(1e5);
-      geo.setAttribute("position", new THREE.BufferAttribute(arr, 3));
-      const mat = new THREE.PointsMaterial({ size: 0.2, map: glyph(ch), transparent: true, depthWrite: false, sizeAttenuation: true });
-      const pts = new THREE.Points(geo, mat);
-      pts.renderOrder = 5;
-      pts.frustumCulled = false;
-      scene.add(pts);
-      return { geo, mat, arr };
+      g.fillText("0", 32, 34);
+      g.fillText("1", 96, 34);
+      const dot = (cx, r0, r1, stops) => {
+        const gr = g.createRadialGradient(cx, 32, r0, cx, 32, r1);
+        stops.forEach(([o, a]) => gr.addColorStop(o, `rgba(255,255,255,${a})`));
+        g.fillStyle = gr;
+        g.fillRect(cx - 32, 0, 64, 64);
+      };
+      dot(160, 0, 30, [[0, 1], [0.3, 1], [0.6, 0.35], [1, 0]]);      // core
+      dot(224, 0, 32, [[0, 0.55], [0.35, 0.22], [1, 0]]);            // halo
+    }
+    const POOL = 480;
+    const bitGeo = new THREE.BufferGeometry();
+    const bitPos = new Float32Array(POOL * 3).fill(1e5);
+    const bitAlpha = new Float32Array(POOL);
+    const bitGlyph = new Float32Array(POOL);
+    const bitSize = new Float32Array(POOL);
+    bitGeo.setAttribute("position", new THREE.BufferAttribute(bitPos, 3));
+    bitGeo.setAttribute("alpha", new THREE.BufferAttribute(bitAlpha, 1));
+    bitGeo.setAttribute("glyph", new THREE.BufferAttribute(bitGlyph, 1));
+    bitGeo.setAttribute("psize", new THREE.BufferAttribute(bitSize, 1));
+    const bitMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: { atlas: { value: new THREE.CanvasTexture(atlasCanvas) }, color: { value: new THREE.Color() }, glint: { value: new THREE.Color() }, scale: { value: 1 } },
+      vertexShader: `
+        attribute float alpha; attribute float glyph; attribute float psize; uniform float scale;
+        varying float vA; varying float vG;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = psize * scale / -mv.z;
+          gl_Position = projectionMatrix * mv;
+          vA = alpha; vG = glyph;
+        }`,
+      fragmentShader: `
+        uniform sampler2D atlas; uniform vec3 color; uniform vec3 glint; varying float vA; varying float vG;
+        void main() {
+          float a = texture2D(atlas, vec2((gl_PointCoord.x + vG) * 0.25, 1.0 - gl_PointCoord.y)).a * vA;
+          if (a < 0.01) discard;
+          vec3 c = vG > 2.5 ? glint : color;
+          gl_FragColor = vec4(c, a);
+          #include <colorspace_fragment>
+        }`,
     });
-    const bits = [];   // { L, x, dir, v, delay, g }
+    const bitPoints = new THREE.Points(bitGeo, bitMat);
+    bitPoints.renderOrder = 5;
+    bitPoints.frustumCulled = false;
+    scene.add(bitPoints);
+    const pulses = [];   // { L, x, dir, v, delay, glyphs }
+    const TRAIL = 5;
+    const GAP = 0.11;
 
     let H = 0;
     let wpp = 0;          // world units per CSS pixel at z = 0
@@ -207,8 +246,16 @@
           arr[s * 3 + 2] = L.z;
           const dx = x - L.hit.x;
           const dy = y - L.hit.y;
-          const g = Math.exp(-(dx * dx + dy * dy) / (Rg * Rg)) * cursor.on;
+          let g = Math.exp(-(dx * dx + dy * dy) / (Rg * Rg)) * cursor.on;
           if (g > near) near = g;
+          if (L.live) {
+            for (const P of pulses) {
+              if (P.L !== L || P.delay > 0) continue;
+              const behind = (P.x - x) * P.dir;            // distance behind the head
+              const lit = behind < 0 ? Math.max(0, 1 + behind / 0.12) : Math.max(0, 1 - behind / 1.6) ** 1.6;
+              if (lit * 0.55 > g) g = lit * 0.55;
+            }
+          }
           col[s * 3] = tint.base.r + (tint.glow.r - tint.base.r) * g;
           col[s * 3 + 1] = tint.base.g + (tint.glow.g - tint.base.g) * g;
           col[s * 3 + 2] = tint.base.b + (tint.glow.b - tint.base.b) * g;
@@ -216,7 +263,7 @@
         L.geo.attributes.position.needsUpdate = true;
         L.geo.attributes.color.needsUpdate = true;
         L.boost = (L.boost || 0) * 0.965;
-        L.mat.opacity = Math.min(0.9, (L.alpha + L.boost * 0.55 + near * 0.45) * intro);
+        L.mat.opacity = Math.min(0.95, (L.alpha + L.boost * 0.6 + near * 0.45) * intro);
       });
       const pa = pGeo.attributes.position.array;
       let n = 0;
@@ -231,28 +278,39 @@
         });
       });
       pGeo.attributes.position.needsUpdate = true;
-      // Bits: advance, place on their line, drop the ones that left the screen.
+      // Pulses: accelerate along their thread and leave at the edge.
       const dt = Math.min(0.05, t - (updateFlow.last ?? t));
       updateFlow.last = t;
-      const fill = [0, 0];
-      for (let i = bits.length - 1; i >= 0; i -= 1) {
-        const b = bits[i];
-        if (b.delay > 0) { b.delay -= dt; continue; }
-        b.v = Math.min(b.v + dt * 3.2, 6);
-        b.x += b.dir * b.v * dt;
-        const X = spanAt(b.L.z);
-        if (Math.abs(b.x) > X) { bits.splice(i, 1); continue; }
-        const set = bitSets[b.g];
-        const j = fill[b.g]++;
-        if (j >= POOL) continue;
-        set.arr[j * 3] = b.x;
-        set.arr[j * 3 + 1] = bend(b.L, b.x, flowY(b.L, b.x, t), b.L.hit);
-        set.arr[j * 3 + 2] = b.L.z;
+      lines.forEach((L) => { L.live = false; });
+      let n2 = 0;
+      const put = (x, y, z, a, glyph, size) => {
+        if (n2 >= POOL) return;
+        bitPos[n2 * 3] = x; bitPos[n2 * 3 + 1] = y; bitPos[n2 * 3 + 2] = z;
+        bitAlpha[n2] = a; bitGlyph[n2] = glyph; bitSize[n2] = size;
+        n2 += 1;
+      };
+      for (let i = pulses.length - 1; i >= 0; i -= 1) {
+        const P = pulses[i];
+        if (P.delay > 0) { P.delay -= dt; continue; }
+        P.age += dt;
+        P.v = Math.min(P.v + dt * 2.6, 5.5);
+        P.x += P.dir * P.v * dt;
+        const X = spanAt(P.L.z);
+        if (Math.abs(P.x) > X + 1) { pulses.splice(i, 1); continue; }
+        P.L.live = true;
+        P.L.boost = Math.max(P.L.boost || 0, 0.35);
+        const fadeIn = Math.min(1, P.age * 8);
+        const yAt = (x) => bend(P.L, x, flowY(P.L, x, t), P.L.hit);
+        const hy = yAt(P.x);
+        const flick = 0.6 + Math.sin(t * 23 + P.seed) * 0.4;       // shimmer of the glint
+        put(P.x, hy, P.L.z, 0.12 * fadeIn * flick, 3, 0.2);         // faint warm glint
+        put(P.x, hy, P.L.z, fadeIn, 2, 0.06);                      // one small dot
       }
-      bitSets.forEach((set, g) => {
-        for (let j = fill[g]; j < POOL; j += 1) set.arr[j * 3 + 1] = 1e5;
-        set.geo.attributes.position.needsUpdate = true;
-      });
+      for (let j = n2; j < POOL; j += 1) { bitPos[j * 3 + 1] = 1e5; bitAlpha[j] = 0; }
+      bitGeo.attributes.position.needsUpdate = true;
+      bitGeo.attributes.alpha.needsUpdate = true;
+      bitGeo.attributes.glyph.needsUpdate = true;
+      bitGeo.attributes.psize.needsUpdate = true;
       pMat.opacity = 0.85 * intro;
     };
 
@@ -322,10 +380,11 @@
       const dark = document.documentElement.dataset.theme === "dark";
       // Neutral threads that turn blue around the cursor.
       tint.base.set(dark ? "#e8ebf2" : "#5b6378");
-      tint.glow.set(css("--accent"));
+      tint.glow.set(dark ? "#6f93ff" : "#2350f5");
       textMat.uniforms.accent.value.set(css("--accent"));
       pMat.color.set(dark ? "#ffffff" : css("--accent"));
-      bitSets.forEach((set) => set.mat.color.set(dark ? "#ffffff" : css("--accent")));
+      bitMat.uniforms.color.value.set(dark ? "#b9c7f0" : "#3b5bd6");
+      bitMat.uniforms.glint.value.set(dark ? "#ffd27a" : "#f2b640");
       paintGlow();
       paintText();
     };
@@ -338,6 +397,7 @@
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
       wpp = (2 * BASE_Z * tanHalf) / H;
+      bitMat.uniforms.scale.value = (H * renderer.getPixelRatio() * 0.5) / tanHalf;
       paintText();
     };
 
@@ -347,19 +407,26 @@
       ndc.set(((clientX - b.left) / b.width) * 2 - 1, -(((clientY - b.top) / b.height) * 2 - 1));
       ray.setFromCamera(ndc, camera);
       const t = (performance.now() - t0) / 1000;
+      // Threads that pass close to the click, at their own depth.
+      const RADIUS = 0.75;
       const near = lines
         .map((L) => { const h = hitAt(L.z); return { L, h, d: Math.abs(flowY(L, h.x, t) - h.y) / ((BASE_Z - L.z) / BASE_Z) }; })
+        .filter((n) => n.d < RADIUS * 1.6)
         .sort((a, c) => a.d - c.d)
-        .slice(0, 7);
-      const dir = ndc.x < 0 ? 1 : -1;            // send towards the far side
+        .slice(0, 9);
+      if (!near.length) near.push(...lines.map((L) => { const h = hitAt(L.z); return { L, h, d: Math.abs(flowY(L, h.x, t) - h.y) }; }).sort((a, c) => a.d - c.d).slice(0, 4));
+      const dir = ndc.x < 0 ? 1 : -1;                    // all travel to the far side
       near.forEach(({ L, h }, rank) => {
         L.boost = 1;
-        const count = 6 + Math.floor(Math.random() * 6);
-        for (let k = 0; k < count; k += 1) {
-          bits.push({ L, x: h.x, dir, v: 0.9 + Math.random() * 0.5, delay: rank * 0.05 + k * 0.075, g: Math.random() < 0.5 ? 0 : 1 });
+        const starts = rank < 4 ? 3 : 2;
+        for (let k = 0; k < starts; k += 1) {
+          pulses.push({
+            L, dir, x: h.x + (Math.random() - 0.5) * RADIUS * 1.8, v: 0.8 + Math.random() * 0.6, age: 0,
+            delay: rank * 0.04 + k * 0.12 + Math.random() * 0.08, seed: Math.random() * 10,
+          });
         }
       });
-      if (bits.length > POOL * 2) bits.splice(0, bits.length - POOL * 2);
+      if (pulses.length > 60) pulses.splice(0, pulses.length - 60);
       kick();
     };
     hero.addEventListener("click", (e) => {
@@ -393,8 +460,8 @@
       mouse.x += (mouse.tx - mouse.x) * 0.05;
       mouse.y += (mouse.ty - mouse.y) * 0.05;
       const fly = ease(p);
-      camera.position.set(mouse.x * 0.45, -mouse.y * 0.25 - fly * 0.4, BASE_Z + (1 - intro) * 2 - fly * 4.8);
-      camera.lookAt(text.position.x * 0.2, text.position.y * 0.2 - fly * 0.3, 0);
+      camera.position.set(0, -fly * 0.4, BASE_Z + (1 - intro) * 2 - fly * 4.8);
+      camera.lookAt(0, -fly * 0.7, 0);
       updateFlow(t, intro);
       textMat.uniforms.opacity.value = intro;
       // Cursor position on the name plane, in the texture's uv space.

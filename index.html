@@ -124,6 +124,7 @@
 
       <details class="job" open>
         <summary>
+          <span class="logo logo-telefonica job-logo" aria-hidden="true"></span>
           <span class="job-title">Financial Systems Analyst, AI Agents &amp; Automation</span>
           <span class="job-org">Telefónica · <span lang="en">Treasury</span><span lang="es">Tesorería</span></span>
           <span class="job-when"><span lang="en">Jun 2026 to now</span><span lang="es">Jun 2026 a hoy</span></span>
@@ -147,8 +148,9 @@
         </div>
       </details>
 
-      <details class="job">
+      <details class="job" open>
         <summary>
+          <span class="logo logo-telefonica job-logo" aria-hidden="true"></span>
           <span class="job-title">ML Engineer, Quantitative Financial Analysis</span>
           <span class="job-org">Telefónica · <span lang="en">Talentum internship</span><span lang="es">Beca Talentum</span></span>
           <span class="job-when">Jun 2025 <span lang="en">to</span><span lang="es">a</span> May 2026</span>
@@ -206,39 +208,31 @@
               </div>
             </div>
             <figure class="topo pipe" data-topo>
-              <svg viewBox="0 22 640 94" role="group" aria-label="Thesis pipeline">
-                <g class="links">
-                  <path data-a="data" data-b="label" d="M100 69H114"/>
-                  <path data-a="label" data-b="m1" d="M206 69H220"/>
-                  <path data-a="m1" data-b="m2" d="M312 69H326"/>
-                  <path data-a="m2" data-b="m3" d="M418 69H432"/>
-                  <path data-a="m3" data-b="bt" d="M524 69H538"/>
-                </g>
-                <g class="node" data-id="data" tabindex="0" role="button"
-                   data-en="Daily prices for EUR/USD, GBP/USD and USD/JPY from yfinance, plus macro series from FRED. 50 features, all lagged one day, and tests that stop the run if any feature looks into the future."
-                   data-es="Precios diarios de EUR/USD, GBP/USD y USD/JPY de yfinance, más series macro de FRED. 50 variables, todas con un día de retraso, y tests que paran la ejecución si alguna mira al futuro.">
-                  <rect x="8" y="40" width="92" height="58" rx="10"/><text x="54" y="64">Data</text><text class="s" x="54" y="81">3 pairs · daily</text></g>
-                <g class="node" data-id="label" tabindex="0" role="button"
-                   data-en="Triple-barrier labels: from each day, does the price touch +1.5 ATR first, −1.5 ATR first, or neither within 5 days? That gives up, down or neutral."
-                   data-es="Etiquetas de triple barrera: desde cada día, ¿el precio toca antes +1,5 ATR, −1,5 ATR o ninguna en 5 días? Eso da sube, baja o neutral.">
-                  <rect x="114" y="40" width="92" height="58" rx="10"/><text x="160" y="64">Label</text><text class="s" x="160" y="81">triple barrier</text></g>
-                <g class="node" data-id="m1" tabindex="0" role="button"
-                   data-en="Primary model: XGBoost predicts the direction every day. Hyperparameters are tuned with Optuna inside each walk-forward window, never on the test data."
-                   data-es="Modelo primario: XGBoost predice la dirección cada día. Los hiperparámetros se ajustan con Optuna dentro de cada ventana walk-forward, nunca con los datos de test.">
-                  <rect x="220" y="40" width="92" height="58" rx="10"/><text x="266" y="64">M1</text><text class="s" x="266" y="81">XGBoost</text></g>
-                <g class="node" data-id="m2" tabindex="0" role="button"
-                   data-en="Meta-labeling: a second model estimates how likely M1's call is to win. A trade is taken only if that probability is above 0.50."
-                   data-es="Meta-labeling: un segundo modelo estima la probabilidad de que la predicción de M1 acierte. Solo se opera si supera 0,50.">
-                  <rect x="326" y="40" width="92" height="58" rx="10"/><text x="372" y="64">M2</text><text class="s" x="372" y="81">meta-labeling</text></g>
-                <g class="node" data-id="m3" tabindex="0" role="button"
-                   data-en="Regime gate: trade only in the market states where signal appeared in development (VIX z-score above 1.5, short-term volatility 1.5× the monthly, or ADX above 30). Ensemble of 3 seeds."
-                   data-es="Filtro de régimen: operar solo en los estados de mercado donde apareció señal en desarrollo (z-score del VIX por encima de 1,5, volatilidad a corto 1,5× la mensual o ADX por encima de 30). Ensemble de 3 semillas.">
-                  <rect x="432" y="40" width="92" height="58" rx="10"/><text x="478" y="64">M3</text><text class="s" x="478" y="81">regime gate</text></g>
-                <g class="node" data-id="bt" tabindex="0" role="button"
-                   data-en="One backtest for every model: stop and target at the label barriers, exit after 5 days, 1 bp cost, one position at a time. Compared against four baselines, including a random walk."
-                   data-es="Un mismo backtest para todos los modelos: stop y objetivo en las barreras de la etiqueta, salida a los 5 días, coste de 1 pb y una posición a la vez. Se compara con cuatro baselines, incluido un paseo aleatorio.">
-                  <rect x="538" y="40" width="92" height="58" rx="10"/><text x="584" y="64">Backtest</text><text class="s" x="584" y="81">1 bp · vs baselines</text></g>
-              </svg>
+              <div class="pipe-steps" role="group" aria-label="Thesis pipeline">
+                <button type="button" class="node pipe-step" data-id="data"
+                  data-en="Daily prices for EUR/USD, GBP/USD and USD/JPY from yfinance, plus macro series from FRED. 50 features, all lagged one day, and tests that stop the run if any feature looks into the future."
+                  data-es="Precios diarios de EUR/USD, GBP/USD y USD/JPY de yfinance, más series macro de FRED. 50 variables, todas con un día de retraso, y tests que paran la ejecución si alguna mira al futuro."><span class="pipe-n">01</span><b>Data</b><span>3 pairs · daily</span></button>
+                <i class="pipe-arrow" aria-hidden="true"></i>
+                <button type="button" class="node pipe-step" data-id="label"
+                  data-en="Triple-barrier labels: from each day, does the price touch +1.5 ATR first, −1.5 ATR first, or neither within 5 days? That gives up, down or neutral."
+                  data-es="Etiquetas de triple barrera: desde cada día, ¿el precio toca antes +1,5 ATR, −1,5 ATR o ninguna en 5 días? Eso da sube, baja o neutral."><span class="pipe-n">02</span><b>Label</b><span>triple barrier</span></button>
+                <i class="pipe-arrow" aria-hidden="true"></i>
+                <button type="button" class="node pipe-step" data-id="m1"
+                  data-en="Primary model: XGBoost predicts the direction every day. Hyperparameters are tuned with Optuna inside each walk-forward window, never on the test data."
+                  data-es="Modelo primario: XGBoost predice la dirección cada día. Los hiperparámetros se ajustan con Optuna dentro de cada ventana walk-forward, nunca con los datos de test."><span class="pipe-n">03</span><b>M1</b><span>XGBoost</span></button>
+                <i class="pipe-arrow" aria-hidden="true"></i>
+                <button type="button" class="node pipe-step" data-id="m2"
+                  data-en="Meta-labeling: a second model estimates how likely M1's call is to win. A trade is taken only if that probability is above 0.50."
+                  data-es="Meta-labeling: un segundo modelo estima la probabilidad de que la predicción de M1 acierte. Solo se opera si supera 0,50."><span class="pipe-n">04</span><b>M2</b><span>meta-labeling</span></button>
+                <i class="pipe-arrow" aria-hidden="true"></i>
+                <button type="button" class="node pipe-step" data-id="m3"
+                  data-en="Regime gate: trade only in the market states where signal appeared in development (VIX z-score above 1.5, short-term volatility 1.5× the monthly, or ADX above 30). Ensemble of 3 seeds."
+                  data-es="Filtro de régimen: operar solo en los estados de mercado donde apareció señal en desarrollo (z-score del VIX por encima de 1,5, volatilidad a corto 1,5× la mensual o ADX por encima de 30). Ensemble de 3 semillas."><span class="pipe-n">05</span><b>M3</b><span>regime gate</span></button>
+                <i class="pipe-arrow" aria-hidden="true"></i>
+                <button type="button" class="node pipe-step" data-id="bt"
+                  data-en="One backtest for every model: stop and target at the label barriers, exit after 5 days, 1 bp cost, one position at a time. Compared against four baselines, including a random walk."
+                  data-es="Un mismo backtest para todos los modelos: stop y objetivo en las barreras de la etiqueta, salida a los 5 días, coste de 1 pb y una posición a la vez. Se compara con cuatro baselines, incluido un paseo aleatorio."><span class="pipe-n">06</span><b>Backtest</b><span>1 bp · vs baselines</span></button>
+              </div>
               <figcaption data-topo-caption
                 data-en="How the final model turns data into a trade, as fixed in the pre-registered protocol. Click any block."
                 data-es="Cómo el modelo final convierte datos en una operación, tal como quedó fijado en el protocolo pre-registrado. Haz clic en cualquier bloque."></figcaption>

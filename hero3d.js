@@ -48,9 +48,15 @@
 
     // The name, drawn to a texture that matches the HTML layout exactly.
     const textCanvas = document.createElement("canvas");
-    const textTex = new THREE.CanvasTexture(textCanvas);
-    textTex.colorSpace = THREE.SRGBColorSpace;
-    textTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // WebGL2 textures are allocated once at a fixed size, so when the canvas
+    // size changes (window resize) the texture has to be recreated.
+    const makeTextTex = () => {
+      const tex = new THREE.CanvasTexture(textCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      return tex;
+    };
+    let textTex = makeTextTex();
     const textMat = new THREE.ShaderMaterial({
       transparent: true,
       uniforms: {
@@ -364,6 +370,15 @@
         g.fillText(str, x0, cy);
         if (dot) { g.fillStyle = css("--accent"); g.fillText(dot, x0 + wStr, cy); }
       });
+      if (textTex.image.width !== textTex.userData.w || textTex.image.height !== textTex.userData.h) {
+        if (textTex.userData.w) {
+          textTex.dispose();
+          textTex = makeTextTex();
+          textMat.uniforms.map.value = textTex;
+        }
+        textTex.userData.w = textCanvas.width;
+        textTex.userData.h = textCanvas.height;
+      }
       textTex.needsUpdate = true;
       text.scale.set(r.width * wpp, r.height * wpp, 1);
       textMat.uniforms.sizePx.value.set(r.width, r.height);
